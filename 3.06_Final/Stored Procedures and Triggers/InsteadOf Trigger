@@ -1,0 +1,41 @@
+CREATE OR REPLACE FUNCTION project.avails_insert(plid integer, pgid integer, ptodate date, pfromdate date, pnop integer)
+  RETURNS boolean AS
+$BODY$
+DECLARE
+	listID avails.listing_id%TYPE;
+	to_d listing.to_date%TYPE;
+	from_d listing.from_date%TYPE;
+	a avails%ROWTYPE;
+BEGIN
+	RAISE NOTICE 'Date omg';
+	listID = plID;
+	select to_date into to_d from listing where listing_id = listID;
+	select from_date into from_d from listing where listing_id = listID;
+
+	if pfromdate < from_d OR ptodate > to_d then
+		RAISE NOTICE 'Date not in range';
+		RETURN FALSE;
+	else
+		RAISE NOTICE 'Dates yeepiii';
+		for a in select * from avails where listing_id = listID
+		loop
+			if (a.from_date = pfromdate OR a.from_date = ptodate OR a.to_date = pfromdate OR a.to_date = ptodate) THEN
+				RAISE NOTICE 'Dates not available';
+				RETURN FALSE;
+			end if;
+			if (pfromdate < a.from_date AND pfromdate< a.to_date AND ptodate < a.from_date AND ptodate < a.to_date) OR (pfromdate > a.from_date AND pfromdate > a.to_date AND ptodate > a.from_date AND ptodate > a.to_date) THEN
+				INSERT INTO avails VALUES(plID,pgID,ptodate,pfromdate,pnop);
+				RAISE NOTICE 'Dates available';
+				RETURN TRUE;
+			else
+				RAISE NOTICE 'Dates not available';
+				RETURN FALSE;
+			end if;
+		end loop;
+		INSERT INTO avails VALUES(plID,pgID,ptodate,pfromdate,pnop);
+		RAISE NOTICE 'Dates available';
+		RETURN TRUE;
+		--return FALSE;
+	end if;
+END;
+$BODY$
